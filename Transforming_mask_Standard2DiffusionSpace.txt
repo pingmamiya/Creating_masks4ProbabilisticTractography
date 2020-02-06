@@ -1,0 +1,51 @@
+basedir=/data/ADHD_ImagingDATA
+subjid='cat $1'
+
+FWHM='cat $2'
+EndingDynamics='cat $3'
+#EndingDynamics='cat $2'
+
+
+
+########################################################################
+# This script is to transform MRS voxels from MRS to diffusion space  ##
+#                                                                      #
+#                                                                      #
+# MRS  -------------->   T1 space ----------------------> DTI          #
+#        affine                           affine                       #
+#      (*seg8.mat)                                                     #
+#                                                                      #
+#                                                                      #
+#                                                                      #
+# *seg8.mat is provided in the Gannet3 output.                         #
+#                                                                      #
+# *mask_GM.nii, *mask_WM.nii, and *mask_CSF.nii files are in T1 space  #
+########################################################################
+
+cd ${basedir}/$1/$1_DWI/
+#imcp b0_tmean_output_unwarped_brain.nii.gz nodif_brain.nii.gz
+
+## subjects who were scanned in 2019 have different folder structure,#
+#  called subjectID_SPECTRO                                          #
+#  cp ../$1_SPECTRO/Gannet/Block1/$1_MEMP* .                         #
+#  cp ../$1_SPECTRO/Gannet/Block1/$1_*mask*.nii .                    #
+######################################################################
+cp ../Gannet/block1/$1_MEMP* .
+cp ../Gannet/block1/$1_*mask*.nii .
+
+#bet $1_MEMP2.nii $1_MEMP2_brain -S -B -f 0.3
+
+
+#mkdir xfms 
+
+#flirt -in nodif_brain.nii.gz -ref $1_MEMP2_brain.nii.gz -out nodif_brain2T1 -omat xfms/diff2T1.mat -dof 6
+convert_xfm -omat xfms/T12diff.mat -inverse xfms/diff2T1.mat
+
+## Subjects who were scanned in 2019 have longer file names that include FWHM and Beginning/Ending dynamics 
+ applywarp --ref=nodif_brain.nii.gz --in=${basedir}/$1/$1_DWI/$1_WIP_Ping_combined_GABA_$2_2_raw_act_block1_1_$3_mask_GM.nii --postmat=${basedir}/$1/$1_DWI/xfms/T12diff.mat --out=$1_GM_diff
+
+
+ applywarp --ref=nodif_brain.nii.gz --in=${basedir}/$1/$1_DWI/$1_WIP_Ping_combined_GABA_$2_2_raw_act_block1_1_$3_mask_WM.nii --postmat=${basedir}/$1/$1_DWI/xfms/T12diff.mat --out=$1_WM_diff
+
+ applywarp --ref=nodif_brain.nii.gz --in=${basedir}/$1/$1_DWI/$1_WIP_Ping_combined_GABA_$2_2_raw_act_block1_1_$3_mask_CSF.nii --postmat=${basedir}/$1/$1_DWI/xfms/T12diff.mat --out=$1_CSF_diff
+
